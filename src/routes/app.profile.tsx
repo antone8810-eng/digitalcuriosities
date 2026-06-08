@@ -1,31 +1,69 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { LogOut, User as UserIcon, Wallet, Mail } from "lucide-react";
+import { LogOut, User as UserIcon, Wallet, Mail, Pencil, Trash2, Loader2, Gem } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 
 export const Route = createFileRoute("/app/profile")({ component: ProfilePage });
 
+type Curio = { id: string; name: string; description: string | null; image_url: string | null; price: number; currency: "DGC" | "PI" };
+
 function ProfilePage() {
   const [profile, setProfile] = useState<{ display_name: string | null; pi_username: string | null; pi_wallet_address: string | null; dgc_balance: number } | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [count, setCount] = useState(0);
+  const [mine, setMine] = useState<Curio[]>([]);
+  const [editing, setEditing] = useState<Curio | null>(null);
+  const [confirmDel, setConfirmDel] = useState<Curio | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => { (async () => {
+  const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     setEmail(u.user.email ?? null);
     const { data } = await supabase.from("profiles").select("display_name,pi_username,pi_wallet_address,dgc_balance").eq("id", u.user.id).single();
     setProfile(data as never);
-    const { count: c } = await supabase.from("curiosities").select("*", { count: "exact", head: true }).eq("owner_id", u.user.id);
-    setCount(c ?? 0);
-  })(); }, []);
+    const { data: c } = await supabase.from("curiosities").select("id,name,description,image_url,price,currency").eq("owner_id", u.user.id).order("created_at", { ascending: false });
+    setMine((c ?? []) as Curio[]);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   async function signOut() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    setSaving(true);
+    const { error } = await supabase.from("curiosities").update({
+      name: editing.name,
+      description: editing.description,
+      price: Number(editing.price) || 0,
+      currency: editing.currency,
+    }).eq("id", editing.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Curio updated");
+    setEditing(null);
+    load();
+  }
+
+  async function doDelete() {
+    if (!confirmDel) return;
+    const { error } = await supabase.from("curiosities").delete().eq("id", confirmDel.id);
+    if (error) return toast.error(error.message);
+    toast.success("Curio deleted");
+    setConfirmDel(null);
+    load();
   }
 
   return (
@@ -38,16 +76,97 @@ function ProfilePage() {
           </div>
           <h1 className="text-xl font-bold">{profile?.pi_username || profile?.display_name || "Pioneer"}</h1>
           {email && <p className="text-xs text-muted-foreground">{email}</p>}
+          <p className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">DGC Balance</p>
+          <p className="gradient-text text-3xl font-extrabold">{(profile?.dgc_balance ?? 0).toFixed(2)}</p>
         </motion.section>
 
         <Row icon={Wallet} label="Pi Wallet" value={profile?.pi_wallet_address || "Not linked"} mono />
         <Row icon={Mail} label="Email" value={email || "—"} />
-        <Row icon={UserIcon} label="Curios minted" value={String(count)} />
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">My Curios ({mine.length})</h2>
+          {mine.length === 0 ? (
+            <div className="glass rounded-2xl p-6 text-center text-sm text-muted-foreground">No curios yet</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {mine.map(c => (
+                <div key={c.id} className="glass overflow-hidden rounded-2xl">
+                  <div className="aspect-square w-full overflow-hidden bg-gradient-primary">
+                    {c.image_url ? <img src={c.image_url} alt={c.name} className="size-full object-cover" /> : <div className="grid size-full place-items-center"><Gem className="size-8 text-primary-foreground" /></div>}
+                  </div>
+                  <div className="p-2">
+                    <p className="truncate text-xs font-semibold">{c.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{c.price} {c.currency}</p>
+                    <div className="mt-1.5 flex gap-1.5">
+                      <Button size="sm" variant="outline" className="h-7 flex-1 rounded-lg text-[11px]" onClick={() => setEditing({ ...c })}>
+                        <Pencil className="size-3" /> Edit
+                      </Button>
+                      <Button size="sm" variant="destructive" className="h-7 rounded-lg" onClick={() => setConfirmDel(c)}>
+                        <Trash2 className="size-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         <Button onClick={signOut} variant="destructive" className="h-12 w-full rounded-2xl">
           <LogOut className="size-4" /> Sign out
         </Button>
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="glass rounded-3xl">
+          <DialogHeader><DialogTitle>Edit Curio</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase text-muted-foreground">Name</Label>
+                <Input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} className="h-11 rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase text-muted-foreground">Description</Label>
+                <Textarea value={editing.description ?? ""} onChange={e => setEditing({ ...editing, description: e.target.value })} className="rounded-xl" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs uppercase text-muted-foreground">Price</Label>
+                  <Input type="number" min="0" step="0.01" value={editing.price} onChange={e => setEditing({ ...editing, price: Number(e.target.value) })} className="h-11 rounded-xl" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs uppercase text-muted-foreground">Currency</Label>
+                  <select value={editing.currency} onChange={e => setEditing({ ...editing, currency: e.target.value as "DGC" | "PI" })}
+                    className="h-11 w-full rounded-xl border bg-background px-3 text-sm">
+                    <option value="DGC">DGC</option>
+                    <option value="PI">PI</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={saving} className="bg-gradient-primary">
+              {saving ? <Loader2 className="size-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
+        <AlertDialogContent className="glass rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{confirmDel?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={doDelete} className="bg-destructive">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

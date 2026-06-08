@@ -13,29 +13,63 @@ import { TopBar } from "@/components/TopBar";
 
 export const Route = createFileRoute("/app/create")({ component: CreatePage });
 
+const MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+
 function CreatePage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>("");
   const [price, setPrice] = useState("1");
   const [currency, setCurrency] = useState<"DGC" | "PI">("DGC");
   const [submitting, setSubmitting] = useState(false);
 
+  function onFile(f: File | null) {
+    if (!f) { setFile(null); setPreview(""); return; }
+    if (!ALLOWED.includes(f.type)) return toast.error("Use JPG, PNG, or WebP");
+    if (f.size > MAX_BYTES) return toast.error("Max file size is 5MB");
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+    setImageUrl("");
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) { setSubmitting(false); return; }
-    const { error } = await supabase.from("curiosities").insert({
-      owner_id: u.user.id, name, description: description || null,
-      image_url: imageUrl || null, price: Number(price) || 0, currency,
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Curio minted!");
-    navigate({ to: "/app/gallery" });
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Not signed in");
+
+      let finalUrl = imageUrl || null;
+      if (file) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${u.user.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("curio-images").upload(path, file, {
+          contentType: file.type, upsert: false,
+        });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("curio-images").getPublicUrl(path);
+        finalUrl = pub.publicUrl;
+      }
+
+      const { error } = await supabase.from("curiosities").insert({
+        owner_id: u.user.id, name, description: description || null,
+        image_url: finalUrl, price: Number(price) || 0, currency,
+      });
+      if (error) throw error;
+      toast.success("Curio minted!");
+      navigate({ to: "/app/gallery" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to mint");
+    } finally {
+      setSubmitting(false);
+    }
   }
+
+  const previewSrc = preview || imageUrl;
 
   return (
     <>
@@ -48,27 +82,32 @@ function CreatePage() {
           className="glass space-y-4 rounded-3xl p-5"
         >
           <div className="grid place-items-center rounded-2xl bg-gradient-primary p-6 neon-glow">
-            {imageUrl ? (
-              <img src={imageUrl} alt="preview" className="aspect-square w-full max-w-[200px] rounded-xl object-cover" onError={() => {}} />
+            {previewSrc ? (
+              <img src={previewSrc} alt="preview" className="aspect-square w-full max-w-[200px] rounded-xl object-cover" />
             ) : (
               <Gem className="size-16 text-primary-foreground" />
             )}
           </div>
 
           <Field label="Name">
-            <Input required placeholder="Cosmic Badge #001" value={name} onChange={e => setName(e.target.value)} className="h-11 rounded-xl" />
+            <Input required maxLength={80} placeholder="Cosmic Badge #001" value={name} onChange={e => setName(e.target.value)} className="h-11 rounded-xl" />
           </Field>
           <Field label="Description">
-            <Textarea placeholder="A rare achievement from the Pi frontier…" value={description} onChange={e => setDescription(e.target.value)} className="rounded-xl" />
+            <Textarea maxLength={500} placeholder="A rare achievement from the Pi frontier…" value={description} onChange={e => setDescription(e.target.value)} className="rounded-xl" />
           </Field>
-          <Field label="Image URL">
-            <div className="flex gap-2">
-              <Input placeholder="https://…" value={imageUrl} onChange={e => setImageUrl(e.target.value)} className="h-11 rounded-xl" />
-              <Button type="button" variant="outline" size="icon" className="size-11 shrink-0 rounded-xl" disabled title="Upload coming soon">
-                <Upload className="size-4" />
-              </Button>
-            </div>
+
+          <Field label="Upload image (JPG/PNG/WebP, ≤5MB)">
+            <label className="glass flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl text-sm font-medium hover:neon-glow">
+              <Upload className="size-4" />
+              <span>{file ? file.name : "Choose file"}</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => onFile(e.target.files?.[0] ?? null)} />
+            </label>
           </Field>
+
+          <Field label="…or paste an Image URL">
+            <Input placeholder="https://…" value={imageUrl} disabled={!!file} onChange={e => setImageUrl(e.target.value)} className="h-11 rounded-xl" />
+          </Field>
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="Price">
               <Input required type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} className="h-11 rounded-xl" />
