@@ -82,5 +82,3 @@ export const verifyPiAuth = createServerFn({ method: "POST" })
     };
   });
 
-void _unused;
-const _unused = 0;
