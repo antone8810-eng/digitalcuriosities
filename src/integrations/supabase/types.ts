@@ -96,6 +96,14 @@ export type Database = {
           reward: number
         }[]
       }
+      purchase_curio: {
+        Args: { _curio_id: string }
+        Returns: {
+          new_balance: number
+          price: number
+          seller_id: string
+        }[]
+      }
     }
     Enums: {
       curio_currency: "DGC" | "PI"

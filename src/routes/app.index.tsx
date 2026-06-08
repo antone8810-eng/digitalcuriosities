@@ -116,8 +116,12 @@ function Dashboard() {
             <p className="text-sm font-semibold">Rewarded Pi Ads</p>
             <p className="text-xs text-muted-foreground">Watch a short ad for bonus DGC (coming soon)</p>
           </div>
-          <Button variant="outline" size="sm" disabled className="rounded-xl">Soon</Button>
+          <Button variant="outline" size="sm" className="rounded-xl"
+            onClick={() => toast.message("Pi Ad integration", { description: "Pi.Ads.showAd('rewarded') will be wired here." })}>
+            Watch Ad
+          </Button>
         </motion.section>
+
 
         <div className="grid grid-cols-2 gap-3">
           <QuickCard icon={Sparkles} label="Explore" to="/app/gallery" />
