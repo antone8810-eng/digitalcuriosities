@@ -85,7 +85,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          display_name: string | null
+          id: string | null
+          pi_username: string | null
+        }
+        Insert: {
+          display_name?: string | null
+          id?: string | null
+          pi_username?: string | null
+        }
+        Update: {
+          display_name?: string | null
+          id?: string | null
+          pi_username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       mine_dgc: {
