@@ -42,7 +42,15 @@ function Dashboard() {
     }
     const row = Array.isArray(data) ? data[0] : data;
     toast.success(`⛏ Mined ${Number(row.reward).toFixed(0)} DGC!`);
-    await load();
+    // Optimistically update from RPC response so balance + cooldown reflect immediately
+    setProfile((prev) =>
+      prev
+        ? { ...prev, dgc_balance: Number(row.new_balance), last_mined_at: row.last_mined_at }
+        : prev,
+    );
+    setNow(Date.now());
+    // Also re-sync from DB in the background
+    load();
   }
 
   async function signOut() {
