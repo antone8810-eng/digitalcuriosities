@@ -88,7 +88,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      mine_dgc: {
+        Args: never
+        Returns: {
+          last_mined_at: string
+          new_balance: number
+          reward: number
+        }[]
+      }
     }
     Enums: {
       curio_currency: "DGC" | "PI"
