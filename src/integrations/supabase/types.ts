@@ -14,7 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      curiosities: {
+        Row: {
+          created_at: string
+          currency: Database["public"]["Enums"]["curio_currency"]
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          owner_id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: Database["public"]["Enums"]["curio_currency"]
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          owner_id: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: Database["public"]["Enums"]["curio_currency"]
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          owner_id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          dgc_balance: number
+          display_name: string | null
+          id: string
+          last_mined_at: string | null
+          pi_username: string | null
+          pi_wallet_address: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dgc_balance?: number
+          display_name?: string | null
+          id: string
+          last_mined_at?: string | null
+          pi_username?: string | null
+          pi_wallet_address?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dgc_balance?: number
+          display_name?: string | null
+          id?: string
+          last_mined_at?: string | null
+          pi_username?: string | null
+          pi_wallet_address?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +91,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      curio_currency: "DGC" | "PI"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +218,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      curio_currency: ["DGC", "PI"],
+    },
   },
 } as const
