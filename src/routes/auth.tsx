@@ -32,10 +32,10 @@ function AuthPage() {
       const { email, tokenHash, user } = await verify({
         data: { accessToken: pi.accessToken },
       });
+      void email;
       const { error } = await supabase.auth.verifyOtp({
         type: "magiclink",
         token_hash: tokenHash,
-        email,
       });
       if (error) throw error;
       toast.success(`Welcome, ${user.username}`);

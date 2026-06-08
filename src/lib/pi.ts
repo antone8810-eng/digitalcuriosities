@@ -25,7 +25,20 @@ export async function piAuthenticate(): Promise<PiAuthResult> {
     throw new Error("Pi SDK unavailable. Please open this app inside the Pi Browser.");
   }
   window.Pi!.init({ version: "2.0", sandbox: true });
-  return window.Pi!.authenticate(["username", "payments"], (p) => {
-    console.warn("Incomplete Pi payment found:", p);
-  });
+
+  const onIncompletePaymentFound = (payment: unknown) => {
+    console.log("Incomplete payment found:", payment);
+    return payment;
+  };
+  const scopes = ["username", "payments"];
+
+  return window.Pi!.authenticate(scopes, onIncompletePaymentFound)
+    .then((authResult) => {
+      console.log("Authentication successful!", authResult);
+      return authResult;
+    })
+    .catch((error) => {
+      console.error("Authentication failed:", error);
+      throw error;
+    });
 }
