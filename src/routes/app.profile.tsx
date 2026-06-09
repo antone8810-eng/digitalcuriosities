@@ -85,6 +85,19 @@ function ProfilePage() {
         <Row icon={Wallet} label="Pi Wallet" value={profile?.pi_wallet_address || "Not linked"} mono />
         <Row icon={Mail} label="Email" value={email || "—"} />
 
+        {(() => {
+          const isVip = !!profile?.vip_until && new Date(profile.vip_until).getTime() > Date.now();
+          return (
+            <Button
+              onClick={() => setVipOpen(true)}
+              className="bg-gradient-accent h-12 w-full rounded-2xl font-semibold text-accent-foreground"
+            >
+              <Crown className="size-4" />
+              {isVip ? `VIP active · until ${new Date(profile!.vip_until!).toLocaleDateString()}` : "Upgrade to VIP"}
+            </Button>
+          );
+        })()}
+
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">My Curios ({mine.length})</h2>
           {mine.length === 0 ? (
