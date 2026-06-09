@@ -16,7 +16,7 @@ export function PiPaymentButton({ amount = 1, memo = "Digital Curiosities — VI
   const [loading, setLoading] = useState(false);
 
   async function callFn(name: "create-pi-payment" | "complete-pi-payment", body: unknown) {
-    const { data, error } = await supabase.functions.invoke(name, { body });
+    const { data, error } = await supabase.functions.invoke(name, { body: body as Record<string, unknown> });
     if (error) throw error;
     if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
     return data;
