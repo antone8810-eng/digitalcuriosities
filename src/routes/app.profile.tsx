@@ -1,23 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { LogOut, User as UserIcon, Wallet, Mail, Pencil, Trash2, Loader2, Gem } from "lucide-react";
+import { LogOut, User as UserIcon, Wallet, Mail, Pencil, Trash2, Loader2, Gem, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { PiPaymentButton } from "@/components/PiPaymentButton";
 
 export const Route = createFileRoute("/app/profile")({ component: ProfilePage });
 
 type Curio = { id: string; name: string; description: string | null; image_url: string | null; price: number; currency: "DGC" | "PI" };
 
 function ProfilePage() {
-  const [profile, setProfile] = useState<{ display_name: string | null; pi_username: string | null; pi_wallet_address: string | null; dgc_balance: number } | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string | null; pi_username: string | null; pi_wallet_address: string | null; dgc_balance: number; vip_until: string | null } | null>(null);
+  const [vipOpen, setVipOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [mine, setMine] = useState<Curio[]>([]);
   const [editing, setEditing] = useState<Curio | null>(null);
@@ -28,7 +30,7 @@ function ProfilePage() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     setEmail(u.user.email ?? null);
-    const { data } = await supabase.from("profiles").select("display_name,pi_username,pi_wallet_address,dgc_balance").eq("id", u.user.id).single();
+    const { data } = await supabase.from("profiles").select("display_name,pi_username,pi_wallet_address,dgc_balance,vip_until").eq("id", u.user.id).single();
     setProfile(data as never);
     const { data: c } = await supabase.from("curiosities").select("id,name,description,image_url,price,currency").eq("owner_id", u.user.id).order("created_at", { ascending: false });
     setMine((c ?? []) as Curio[]);
@@ -82,6 +84,19 @@ function ProfilePage() {
 
         <Row icon={Wallet} label="Pi Wallet" value={profile?.pi_wallet_address || "Not linked"} mono />
         <Row icon={Mail} label="Email" value={email || "—"} />
+
+        {(() => {
+          const isVip = !!profile?.vip_until && new Date(profile.vip_until).getTime() > Date.now();
+          return (
+            <Button
+              onClick={() => setVipOpen(true)}
+              className="bg-gradient-accent h-12 w-full rounded-2xl font-semibold text-accent-foreground"
+            >
+              <Crown className="size-4" />
+              {isVip ? `VIP active · until ${new Date(profile!.vip_until!).toLocaleDateString()}` : "Upgrade to VIP"}
+            </Button>
+          );
+        })()}
 
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">My Curios ({mine.length})</h2>
@@ -154,6 +169,22 @@ function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={vipOpen} onOpenChange={setVipOpen}>
+        <DialogContent className="glass rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Crown className="size-5 text-accent" /> Upgrade to VIP</DialogTitle>
+            <DialogDescription>Pay with Pi and enjoy 30 days of premium perks.</DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-center gap-2">✨ <span>No ads for 30 days</span></li>
+            <li className="flex items-center gap-2">⛏ <span>Priority mining boosts (coming soon)</span></li>
+            <li className="flex items-center gap-2">💎 <span>VIP badge on your profile</span></li>
+          </ul>
+          <PiPaymentButton amount={1} memo="Digital Curiosities — VIP 30 days" onSuccess={() => { setVipOpen(false); load(); }} />
+        </DialogContent>
+      </Dialog>
+
 
       <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
         <AlertDialogContent className="glass rounded-3xl">

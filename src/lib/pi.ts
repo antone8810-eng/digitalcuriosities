@@ -4,6 +4,14 @@
 export type PiUser = { uid: string; username: string };
 export type PiAuthResult = { user: PiUser; accessToken: string };
 
+export type PiPaymentData = { amount: number; memo: string; metadata: Record<string, unknown> };
+export type PiPaymentCallbacks = {
+  onReadyForServerApproval: (paymentId: string) => void;
+  onReadyForServerCompletion: (paymentId: string, txid: string) => void;
+  onCancel: (paymentId: string) => void;
+  onError: (error: Error, payment?: unknown) => void;
+};
+
 declare global {
   interface Window {
     Pi?: {
@@ -12,6 +20,7 @@ declare global {
         scopes: string[],
         onIncompletePaymentFound: (p: unknown) => void,
       ) => Promise<PiAuthResult>;
+      createPayment: (data: PiPaymentData, callbacks: PiPaymentCallbacks) => Promise<unknown>;
     };
   }
 }

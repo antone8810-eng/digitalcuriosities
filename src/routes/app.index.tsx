@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { useAd } from "@/hooks/use-ad";
 
 export const Route = createFileRoute("/app/")({ component: Dashboard });
 
@@ -113,22 +114,8 @@ function Dashboard() {
           </Button>
         </motion.section>
 
-        <motion.section
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="glass flex items-center gap-3 rounded-3xl p-4"
-        >
-          <div className="grid size-11 place-items-center rounded-xl bg-gradient-accent">
-            <Megaphone className="size-5 text-accent-foreground" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold">Rewarded Pi Ads</p>
-            <p className="text-xs text-muted-foreground">Watch a short ad for bonus DGC (coming soon)</p>
-          </div>
-          <Button variant="outline" size="sm" className="rounded-xl"
-            onClick={() => toast.message("Pi Ad integration", { description: "Pi.Ads.showAd('rewarded') will be wired here." })}>
-            Watch Ad
-          </Button>
-        </motion.section>
+        <RewardedAdCard />
+
 
 
         <div className="grid grid-cols-2 gap-3">
@@ -146,6 +133,29 @@ function QuickCard({ icon: Icon, label, to }: { icon: React.ComponentType<{ clas
       <Icon className="size-5" />
       <span className="text-sm font-semibold">{label}</span>
     </a>
+  );
+}
+
+function RewardedAdCard() {
+  const { canShowAd } = useAd();
+  if (!canShowAd) return null;
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+      className="glass flex items-center gap-3 rounded-3xl p-4"
+    >
+      <div className="grid size-11 place-items-center rounded-xl bg-gradient-accent">
+        <Megaphone className="size-5 text-accent-foreground" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-semibold">Rewarded Pi Ads</p>
+        <p className="text-xs text-muted-foreground">Watch a short ad for bonus DGC (coming soon)</p>
+      </div>
+      <Button variant="outline" size="sm" className="rounded-xl"
+        onClick={() => toast.message("Pi Ad integration", { description: "Pi.Ads.showAd('rewarded') will be wired here." })}>
+        Watch Ad
+      </Button>
+    </motion.section>
   );
 }
 
