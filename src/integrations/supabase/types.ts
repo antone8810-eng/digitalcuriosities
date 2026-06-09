@@ -50,6 +50,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pi_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          memo: string | null
+          metadata: Json | null
+          payment_id: string
+          status: string
+          txid: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          memo?: string | null
+          metadata?: Json | null
+          payment_id: string
+          status?: string
+          txid?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          memo?: string | null
+          metadata?: Json | null
+          payment_id?: string
+          status?: string
+          txid?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -60,6 +99,7 @@ export type Database = {
           pi_username: string | null
           pi_wallet_address: string | null
           updated_at: string
+          vip_until: string | null
         }
         Insert: {
           created_at?: string
@@ -70,6 +110,7 @@ export type Database = {
           pi_username?: string | null
           pi_wallet_address?: string | null
           updated_at?: string
+          vip_until?: string | null
         }
         Update: {
           created_at?: string
@@ -80,6 +121,7 @@ export type Database = {
           pi_username?: string | null
           pi_wallet_address?: string | null
           updated_at?: string
+          vip_until?: string | null
         }
         Relationships: []
       }
