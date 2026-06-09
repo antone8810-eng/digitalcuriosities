@@ -170,6 +170,22 @@ function ProfilePage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={vipOpen} onOpenChange={setVipOpen}>
+        <DialogContent className="glass rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Crown className="size-5 text-accent" /> Upgrade to VIP</DialogTitle>
+            <DialogDescription>Pay with Pi and enjoy 30 days of premium perks.</DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-center gap-2">✨ <span>No ads for 30 days</span></li>
+            <li className="flex items-center gap-2">⛏ <span>Priority mining boosts (coming soon)</span></li>
+            <li className="flex items-center gap-2">💎 <span>VIP badge on your profile</span></li>
+          </ul>
+          <PiPaymentButton amount={1} memo="Digital Curiosities — VIP 30 days" onSuccess={() => { setVipOpen(false); load(); }} />
+        </DialogContent>
+      </Dialog>
+
+
       <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
         <AlertDialogContent className="glass rounded-3xl">
           <AlertDialogHeader>
