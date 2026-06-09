@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { useAd } from "@/hooks/use-ad";
 
 export const Route = createFileRoute("/app/")({ component: Dashboard });
 
