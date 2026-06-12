@@ -53,8 +53,10 @@ function Dashboard() {
           className="glass neon-glow relative overflow-hidden rounded-3xl p-6"
         >
           <div className="bg-gradient-primary absolute -right-10 -top-10 size-40 rounded-full opacity-40 blur-2xl" />
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Pioneer</p>
-          <h2 className="mt-1 text-2xl font-bold">{profile?.pi_username || profile?.display_name || "Welcome"}</h2>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Pi Pioneer</p>
+          <h2 className="mt-1 text-2xl font-bold">
+            {profile?.pi_username ? `@${profile.pi_username}` : profile?.display_name || "Welcome"}
+          </h2>
           {profile?.pi_wallet_address && (
             <p className="mt-1 font-mono text-xs text-muted-foreground">{profile.pi_wallet_address}</p>
           )}
