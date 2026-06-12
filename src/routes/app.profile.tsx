@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { PiPaymentButton } from "@/components/PiPaymentButton";
+import { useUser, useRefreshUser } from "@/hooks/use-user";
 
 export const Route = createFileRoute("/app/profile")({ component: ProfilePage });
 
