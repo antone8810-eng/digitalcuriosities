@@ -72,6 +72,16 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.Pi) {
+      window.Pi.init({ version: "2.0", sandbox: true });
+      console.log("Pi SDK initialized in sandbox mode");
+    } else {
+      console.warn("Pi SDK not available - not in Pi Browser");
+    }
+  }, []);
+
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
