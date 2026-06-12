@@ -19,9 +19,10 @@ export const Route = createFileRoute("/app/profile")({ component: ProfilePage })
 type Curio = { id: string; name: string; description: string | null; image_url: string | null; price: number; currency: "DGC" | "PI" };
 
 function ProfilePage() {
-  const [profile, setProfile] = useState<{ display_name: string | null; pi_username: string | null; pi_wallet_address: string | null; dgc_balance: number; vip_until: string | null } | null>(null);
+  const { data: profile } = useUser();
+  const refreshUser = useRefreshUser();
   const [vipOpen, setVipOpen] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
+  const email = profile?.email ?? null;
   const [mine, setMine] = useState<Curio[]>([]);
   const [editing, setEditing] = useState<Curio | null>(null);
   const [confirmDel, setConfirmDel] = useState<Curio | null>(null);
@@ -30,9 +31,6 @@ function ProfilePage() {
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    setEmail(u.user.email ?? null);
-    const { data } = await supabase.from("profiles").select("display_name,pi_username,pi_wallet_address,dgc_balance,vip_until").eq("id", u.user.id).single();
-    setProfile(data as never);
     const { data: c } = await supabase.from("curiosities").select("id,name,description,image_url,price,currency").eq("owner_id", u.user.id).order("created_at", { ascending: false });
     setMine((c ?? []) as Curio[]);
   }, []);
