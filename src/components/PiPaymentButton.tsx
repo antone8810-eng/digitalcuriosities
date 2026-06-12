@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,20 +11,44 @@ type Props = {
   onSuccess?: (vipUntil: string) => void;
 };
 
-// Wraps window.Pi.createPayment + our edge functions to grant VIP for 30 days.
-export function PiPaymentButton({ amount = 1, memo = "Digital Curiosities — VIP 30 days", onSuccess }: Props) {
-  const [loading, setLoading] = useState(false);
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-  async function callFn(name: "create-pi-payment" | "complete-pi-payment", body: unknown) {
-    const { data, error } = await supabase.functions.invoke(name, { body: body as Record<string, unknown> });
-    if (error) throw error;
-    if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
-    return data;
-  }
+async function callEdge(fn: "approve-payment" | "complete-payment", body: unknown) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json?.error) throw new Error(json?.error || `${fn} failed (${res.status})`);
+  return json;
+}
+
+export function PiPaymentButton({
+  amount = 1,
+  memo = "VIP Subscription - 30 days",
+  onSuccess,
+}: Props) {
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   async function pay() {
     if (!isPiBrowser() || !window.Pi?.createPayment) {
       toast.error("Open this app in the Pi Browser to pay with Pi.");
+      return;
+    }
+    if (!userId) {
+      toast.error("You must be signed in.");
       return;
     }
     setLoading(true);
@@ -32,23 +56,39 @@ export function PiPaymentButton({ amount = 1, memo = "Digital Curiosities — VI
     const paymentData = {
       amount,
       memo,
-      metadata: { product: "vip_30d" },
+      metadata: { type: "VIP_30_DAYS", userId },
     };
 
     const callbacks = {
       onReadyForServerApproval: async (paymentId: string) => {
-        try { await callFn("create-pi-payment", { paymentId }); }
-        catch (e) { console.error("approve failed", e); toast.error("Approval failed"); setLoading(false); }
+        try {
+          await callEdge("approve-payment", { paymentId });
+        } catch (e) {
+          console.error("approve-payment failed", e);
+          toast.error((e as Error).message || "Approval failed");
+          setLoading(false);
+        }
       },
       onReadyForServerCompletion: async (paymentId: string, txid: string) => {
         try {
-          const res = (await callFn("complete-pi-payment", { paymentId, txid })) as { vip_until: string };
-          toast.success("🎉 VIP activated for 30 days!");
-          onSuccess?.(res.vip_until);
+          const res = (await callEdge("complete-payment", { paymentId, txid, userId })) as {
+            vip_until?: string;
+          };
+          // Refresh user/profile to pick up new vip_until
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("vip_until")
+            .eq("id", userId)
+            .single();
+          const vipUntil = res.vip_until ?? (profile as { vip_until?: string } | null)?.vip_until ?? "";
+          toast.success("🎉 VIP activated for 30 days");
+          onSuccess?.(vipUntil);
         } catch (e) {
-          console.error("complete failed", e);
-          toast.error("Payment completion failed");
-        } finally { setLoading(false); }
+          console.error("complete-payment failed", e);
+          toast.error((e as Error).message || "Payment completion failed");
+        } finally {
+          setLoading(false);
+        }
       },
       onCancel: (paymentId: string) => {
         console.log("Pi payment cancelled", paymentId);
@@ -72,7 +112,11 @@ export function PiPaymentButton({ amount = 1, memo = "Digital Curiosities — VI
   }
 
   return (
-    <Button onClick={pay} disabled={loading} className="bg-gradient-primary h-12 w-full rounded-2xl font-semibold">
+    <Button
+      onClick={pay}
+      disabled={loading || !userId}
+      className="bg-gradient-primary h-12 w-full rounded-2xl font-semibold"
+    >
       {loading ? <Loader2 className="size-4 animate-spin" /> : <Crown className="size-4" />}
       {loading ? "Processing…" : `Pay ${amount} π · Unlock VIP`}
     </Button>
