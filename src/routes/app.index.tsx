@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Gem, Pickaxe, Sparkles, Clock, Megaphone, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -7,24 +7,16 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { useAd } from "@/hooks/use-ad";
+import { useUser, useRefreshUser } from "@/hooks/use-user";
 
 export const Route = createFileRoute("/app/")({ component: Dashboard });
 
-type Profile = { display_name: string | null; pi_username: string | null; pi_wallet_address: string | null; dgc_balance: number; last_mined_at: string | null };
-
 function Dashboard() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { data: profile } = useUser();
+  const refreshUser = useRefreshUser();
   const [mining, setMining] = useState(false);
   const [now, setNow] = useState(Date.now());
 
-  const load = useCallback(async () => {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
-    const { data } = await supabase.from("profiles").select("display_name,pi_username,pi_wallet_address,dgc_balance,last_mined_at").eq("id", u.user.id).single();
-    if (data) setProfile(data as Profile);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
   const nextAt = profile?.last_mined_at ? new Date(profile.last_mined_at).getTime() + 24 * 3600_000 : 0;
@@ -43,15 +35,8 @@ function Dashboard() {
     }
     const row = Array.isArray(data) ? data[0] : data;
     toast.success(`⛏ Mined ${Number(row.reward).toFixed(0)} DGC!`);
-    // Optimistically update from RPC response so balance + cooldown reflect immediately
-    setProfile((prev) =>
-      prev
-        ? { ...prev, dgc_balance: Number(row.new_balance), last_mined_at: row.last_mined_at }
-        : prev,
-    );
     setNow(Date.now());
-    // Also re-sync from DB in the background
-    load();
+    await refreshUser();
   }
 
   async function signOut() {
