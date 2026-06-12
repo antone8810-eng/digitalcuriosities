@@ -125,6 +125,39 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string
+          dgc_balance: number
+          id: string
+          last_mine_at: string | null
+          pi_username: string | null
+          updated_at: string
+          vip_until: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string
+          dgc_balance?: number
+          id: string
+          last_mine_at?: string | null
+          pi_username?: string | null
+          updated_at?: string
+          vip_until?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string
+          dgc_balance?: number
+          id?: string
+          last_mine_at?: string | null
+          pi_username?: string | null
+          updated_at?: string
+          vip_until?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       public_profiles: {

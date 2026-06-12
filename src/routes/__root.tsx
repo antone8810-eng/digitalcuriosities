@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
+import { UserProvider } from "@/hooks/use-user";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -93,10 +94,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <Outlet />
-        <Toaster richColors position="top-center" />
-      </ThemeProvider>
+      <UserProvider>
+        <ThemeProvider>
+          <Outlet />
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
+      </UserProvider>
     </QueryClientProvider>
   );
 }

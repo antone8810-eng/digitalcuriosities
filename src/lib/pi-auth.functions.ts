@@ -66,6 +66,15 @@ export const verifyPiAuth = createServerFn({ method: "POST" })
       display_name: me.username,
     }, { onConflict: "id" });
 
+    await supabaseAdmin.from("users").upsert({
+      id: me.uid,
+      auth_user_id: userId,
+      pi_username: me.username,
+      dgc_balance: 0,
+      last_mine_at: null,
+      vip_until: null,
+    }, { onConflict: "id" });
+
     // 4. Generate magic-link token_hash for client to verifyOtp with
     const link = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
