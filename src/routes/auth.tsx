@@ -9,12 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { piAuthenticate, isPiBrowser } from "@/lib/pi";
 import { verifyPiAuth } from "@/lib/pi-auth.functions";
+import { useRefreshUser } from "@/hooks/use-user";
 
 export const Route = createFileRoute("/auth")({ component: AuthPage });
 
 function AuthPage() {
   const navigate = useNavigate();
   const verify = useServerFn(verifyPiAuth);
+  const refreshUser = useRefreshUser();
   const [loading, setLoading] = useState(false);
   const [inPiBrowser, setInPiBrowser] = useState(true);
 
@@ -38,6 +40,7 @@ function AuthPage() {
         token_hash: tokenHash,
       });
       if (error) throw error;
+      await refreshUser();
       toast.success(`Welcome, ${user.username}`);
       navigate({ to: "/app" });
     } catch (e) {

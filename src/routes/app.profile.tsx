@@ -75,7 +75,7 @@ function ProfilePage() {
           <div className="bg-gradient-primary mx-auto mb-3 grid size-20 place-items-center rounded-3xl">
             <UserIcon className="size-9 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold">{profile?.pi_username ? `@${profile.pi_username}` : profile?.display_name || "Pioneer"}</h1>
+          <h1 className="text-xl font-bold">{profile?.pi_username ? `@${profile.pi_username}` : profile?.display_name || "Pi user"}</h1>
           {email && <p className="text-xs text-muted-foreground">{email}</p>}
           <p className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">DGC Balance</p>
           <p className="gradient-text text-3xl font-extrabold">{(profile?.dgc_balance ?? 0).toFixed(2)}</p>
