@@ -74,7 +74,6 @@ export function PiPaymentButton({
           const res = (await callEdge("complete-payment", { paymentId, txid, userId })) as {
             vip_until?: string;
           };
-          // Refresh user/profile to pick up new vip_until
           const { data: profile } = await supabase
             .from("profiles")
             .select("vip_until")
@@ -97,7 +96,12 @@ export function PiPaymentButton({
       },
       onError: (error: Error, payment?: unknown) => {
         console.error("Pi payment error", error, payment);
-        toast.error(error?.message || "Pi payment error");
+        const msg = error?.message || "";
+        if (msg.toLowerCase().includes("payments") && msg.toLowerCase().includes("scope")) {
+          toast.error("Pi payments scope missing. Please sign out and sign back in to grant payment permission.");
+        } else {
+          toast.error(msg || "Pi payment error");
+        }
         setLoading(false);
       },
     };
