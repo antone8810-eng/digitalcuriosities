@@ -180,7 +180,7 @@ function ProfilePage() {
             <li className="flex items-center gap-2">⛏ <span>Priority mining boosts (coming soon)</span></li>
             <li className="flex items-center gap-2">💎 <span>VIP badge on your profile</span></li>
           </ul>
-          <PiPaymentButton amount={1} memo="Digital Curiosities — VIP 30 days" onSuccess={() => { setVipOpen(false); load(); }} />
+          <PiPaymentButton amount={1} memo="Digital Curiosities — VIP 30 days" onSuccess={() => { setVipOpen(false); refreshUser(); }} />
         </DialogContent>
       </Dialog>
 
