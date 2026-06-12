@@ -12,15 +12,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { PiPaymentButton } from "@/components/PiPaymentButton";
+import { useUser, useRefreshUser } from "@/hooks/use-user";
 
 export const Route = createFileRoute("/app/profile")({ component: ProfilePage });
 
 type Curio = { id: string; name: string; description: string | null; image_url: string | null; price: number; currency: "DGC" | "PI" };
 
 function ProfilePage() {
-  const [profile, setProfile] = useState<{ display_name: string | null; pi_username: string | null; pi_wallet_address: string | null; dgc_balance: number; vip_until: string | null } | null>(null);
+  const { data: profile } = useUser();
+  const refreshUser = useRefreshUser();
   const [vipOpen, setVipOpen] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
+  const email = profile?.email ?? null;
   const [mine, setMine] = useState<Curio[]>([]);
   const [editing, setEditing] = useState<Curio | null>(null);
   const [confirmDel, setConfirmDel] = useState<Curio | null>(null);
@@ -29,9 +31,6 @@ function ProfilePage() {
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    setEmail(u.user.email ?? null);
-    const { data } = await supabase.from("profiles").select("display_name,pi_username,pi_wallet_address,dgc_balance,vip_until").eq("id", u.user.id).single();
-    setProfile(data as never);
     const { data: c } = await supabase.from("curiosities").select("id,name,description,image_url,price,currency").eq("owner_id", u.user.id).order("created_at", { ascending: false });
     setMine((c ?? []) as Curio[]);
   }, []);
@@ -76,7 +75,7 @@ function ProfilePage() {
           <div className="bg-gradient-primary mx-auto mb-3 grid size-20 place-items-center rounded-3xl">
             <UserIcon className="size-9 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold">{profile?.pi_username || profile?.display_name || "Pioneer"}</h1>
+          <h1 className="text-xl font-bold">{profile?.pi_username ? `@${profile.pi_username}` : profile?.display_name || "Pioneer"}</h1>
           {email && <p className="text-xs text-muted-foreground">{email}</p>}
           <p className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">DGC Balance</p>
           <p className="gradient-text text-3xl font-extrabold">{(profile?.dgc_balance ?? 0).toFixed(2)}</p>
@@ -181,7 +180,7 @@ function ProfilePage() {
             <li className="flex items-center gap-2">⛏ <span>Priority mining boosts (coming soon)</span></li>
             <li className="flex items-center gap-2">💎 <span>VIP badge on your profile</span></li>
           </ul>
-          <PiPaymentButton amount={1} memo="Digital Curiosities — VIP 30 days" onSuccess={() => { setVipOpen(false); load(); }} />
+          <PiPaymentButton amount={1} memo="Digital Curiosities — VIP 30 days" onSuccess={() => { setVipOpen(false); refreshUser(); }} />
         </DialogContent>
       </Dialog>
 

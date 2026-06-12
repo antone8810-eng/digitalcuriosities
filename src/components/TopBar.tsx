@@ -1,9 +1,12 @@
 import { Moon, Sun, Coins } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@/hooks/use-user";
 
-export function TopBar({ balance }: { balance: number | null }) {
+export function TopBar({ balance }: { balance?: number | null }) {
   const { theme, toggle } = useTheme();
+  const { data: user } = useUser();
+  const shown = balance ?? user?.dgc_balance ?? null;
   return (
     <header className="sticky top-0 z-30 px-4 pt-4">
       <div className="glass mx-auto flex max-w-3xl items-center justify-between rounded-2xl px-4 py-2.5">
@@ -12,8 +15,10 @@ export function TopBar({ balance }: { balance: number | null }) {
             <Coins className="size-4 text-primary-foreground" />
           </div>
           <div className="leading-tight">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Balance</p>
-            <p className="text-sm font-bold gradient-text">{balance?.toFixed(2) ?? "—"} DGC</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              {user?.pi_username ? `@${user.pi_username}` : "Balance"}
+            </p>
+            <p className="text-sm font-bold gradient-text">{shown?.toFixed(2) ?? "—"} DGC</p>
           </div>
         </div>
         <Button size="icon" variant="ghost" onClick={toggle} className="rounded-full">
