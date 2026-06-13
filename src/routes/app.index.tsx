@@ -65,9 +65,7 @@ function Dashboard() {
               <p className="text-xs uppercase tracking-widest text-muted-foreground">DGC Balance</p>
               <p className="gradient-text text-4xl font-extrabold">{(profile?.dgc_balance ?? 0).toFixed(2)}</p>
             </div>
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-accent neon-glow">
-              <Gem className="size-7 text-accent-foreground" />
-            </div>
+            <img src={(await import("@/assets/dgc-coin.jpg.asset.json")).default?.url ?? ""} alt="DGC" className="size-14 rounded-2xl object-cover neon-glow" />
           </div>
         </motion.section>
 
