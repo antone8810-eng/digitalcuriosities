@@ -74,14 +74,8 @@ export function PiPaymentButton({
           const res = (await callEdge("complete-payment", { paymentId, txid, userId })) as {
             vip_until?: string;
           };
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("vip_until")
-            .eq("id", userId)
-            .single();
-          const vipUntil = res.vip_until ?? (profile as { vip_until?: string } | null)?.vip_until ?? "";
           toast.success("🎉 VIP activated for 30 days");
-          onSuccess?.(vipUntil);
+          onSuccess?.(res.vip_until ?? "");
         } catch (e) {
           console.error("complete-payment failed", e);
           toast.error((e as Error).message || "Payment completion failed");

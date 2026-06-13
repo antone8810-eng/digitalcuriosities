@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { LogOut, User as UserIcon, Wallet, Mail, Pencil, Trash2, Loader2, Gem, Crown } from "lucide-react";
+import { LogOut, User as UserIcon, Wallet, Pencil, Trash2, Loader2, Gem, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,6 @@ function ProfilePage() {
   const { data: profile } = useUser();
   const refreshUser = useRefreshUser();
   const [vipOpen, setVipOpen] = useState(false);
-  const email = profile?.email ?? null;
   const [mine, setMine] = useState<Curio[]>([]);
   const [editing, setEditing] = useState<Curio | null>(null);
   const [confirmDel, setConfirmDel] = useState<Curio | null>(null);
@@ -76,13 +75,11 @@ function ProfilePage() {
             <UserIcon className="size-9 text-primary-foreground" />
           </div>
           <h1 className="text-xl font-bold">{profile?.pi_username ? `@${profile.pi_username}` : profile?.display_name || "Pi user"}</h1>
-          {email && <p className="text-xs text-muted-foreground">{email}</p>}
           <p className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">DGC Balance</p>
           <p className="gradient-text text-3xl font-extrabold">{(profile?.dgc_balance ?? 0).toFixed(2)}</p>
         </motion.section>
 
-        <Row icon={Wallet} label="Pi Wallet" value={profile?.pi_wallet_address || "Not linked"} mono />
-        <Row icon={Mail} label="Email" value={email || "—"} />
+        <Row icon={Wallet} label="Pi Wallet Address" value={profile?.pi_wallet_address || "Not linked"} mono />
 
         {(() => {
           const isVip = !!profile?.vip_until && new Date(profile.vip_until).getTime() > Date.now();

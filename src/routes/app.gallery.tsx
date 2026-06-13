@@ -40,8 +40,8 @@ function GalleryPage() {
     const { data: u } = await supabase.auth.getUser();
     setMe(u.user?.id ?? null);
     if (u.user) {
-      const { data: prof } = await supabase.from("profiles").select("dgc_balance").eq("id", u.user.id).single();
-      setBalance(prof?.dgc_balance ?? 0);
+      const { data: prof } = await supabase.from("users").select("dgc_balance").eq("auth_user_id", u.user.id).maybeSingle();
+      setBalance(Number(prof?.dgc_balance ?? 0));
     }
     const { data } = await supabase.from("curiosities").select("*").order("created_at", { ascending: false });
     const curios = (data ?? []) as Curio[];
