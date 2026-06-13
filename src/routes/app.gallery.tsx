@@ -28,10 +28,10 @@ function GalleryPage() {
 
   const fetchOwners = useCallback(async (ids: string[]) => {
     if (!ids.length) return;
-    const { data: profs } = await supabase.from("profiles").select("id,display_name,pi_username").in("id", ids);
+    const { data: profs } = await supabase.from("public_profiles").select("id,display_name,pi_username").in("id", ids);
     setOwners(prev => {
       const next = { ...prev };
-      (profs ?? []).forEach((p) => { next[p.id] = p as Owner; });
+      (profs ?? []).forEach((p) => { if (p.id) next[p.id] = p as Owner; });
       return next;
     });
   }, []);
