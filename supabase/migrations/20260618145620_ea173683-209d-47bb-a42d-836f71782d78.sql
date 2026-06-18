@@ -1,0 +1,1 @@
+UPDATE public.users u SET dgc_balance = p.dgc_balance, last_mine_at = COALESCE(u.last_mine_at, p.last_mined_at) FROM public.profiles p WHERE p.id = u.auth_user_id AND p.dgc_balance > u.dgc_balance;
