@@ -3,7 +3,7 @@ import { Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { isPiBrowser } from "@/lib/pi";
+import { isPiBrowser, piAuthenticate } from "@/lib/pi";
 
 type Props = {
   amount?: number;
@@ -14,7 +14,7 @@ type Props = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-async function callEdge(fn: "approve-payment" | "complete-payment", body: unknown) {
+async function callEdge(fn: "create-pi-payment" | "complete-pi-payment", body: unknown) {
   const { data: { session } } = await supabase.auth.getSession();
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
     method: "POST",
@@ -53,6 +53,15 @@ export function PiPaymentButton({
     }
     setLoading(true);
 
+    try {
+      await piAuthenticate();
+    } catch (e) {
+      console.error("Pi payments authorization failed", e);
+      toast.error(e instanceof Error ? e.message : "Please authorize Pi payments and try again.");
+      setLoading(false);
+      return;
+    }
+
     const paymentData = {
       amount,
       memo,
@@ -62,16 +71,16 @@ export function PiPaymentButton({
     const callbacks = {
       onReadyForServerApproval: async (paymentId: string) => {
         try {
-          await callEdge("approve-payment", { paymentId });
+          await callEdge("create-pi-payment", { paymentId });
         } catch (e) {
-          console.error("approve-payment failed", e);
+          console.error("create-pi-payment failed", e);
           toast.error((e as Error).message || "Approval failed");
           setLoading(false);
         }
       },
       onReadyForServerCompletion: async (paymentId: string, txid: string) => {
         try {
-          const res = (await callEdge("complete-payment", { paymentId, txid, userId })) as {
+          const res = (await callEdge("complete-pi-payment", { paymentId, txid, userId })) as {
             vip_until?: string;
           };
           toast.success("🎉 VIP activated for 30 days");
@@ -104,7 +113,12 @@ export function PiPaymentButton({
       await window.Pi.createPayment(paymentData, callbacks);
     } catch (e) {
       console.error(e);
-      toast.error((e as Error).message);
+      const msg = e instanceof Error ? e.message : "Pi payment error";
+      if (msg.toLowerCase().includes("payments") && msg.toLowerCase().includes("scope")) {
+        toast.error("Please authorize Pi payments, then tap the VIP payment button again.");
+      } else {
+        toast.error(msg);
+      }
       setLoading(false);
     }
   }
