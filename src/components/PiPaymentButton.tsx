@@ -113,7 +113,12 @@ export function PiPaymentButton({
       await window.Pi.createPayment(paymentData, callbacks);
     } catch (e) {
       console.error(e);
-      toast.error((e as Error).message);
+      const msg = e instanceof Error ? e.message : "Pi payment error";
+      if (msg.toLowerCase().includes("payments") && msg.toLowerCase().includes("scope")) {
+        toast.error("Please authorize Pi payments, then tap the VIP payment button again.");
+      } else {
+        toast.error(msg);
+      }
       setLoading(false);
     }
   }

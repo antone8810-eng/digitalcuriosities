@@ -91,7 +91,7 @@ function AuthPage() {
           )}
 
           <p className="mt-6 text-xs text-muted-foreground">
-            By continuing you authorize the app to read your Pi username.
+            By continuing you authorize the app to read your Pi username and create Pi payments.
           </p>
         </motion.div>
       </div>
