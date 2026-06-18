@@ -48,18 +48,18 @@ Deno.serve(async (req) => {
       .eq("user_id", userId);
 
     // Grant / extend VIP by 30 days from the later of (now, current vip_until)
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: userRow } = await supabase
+      .from("users")
       .select("vip_until")
-      .eq("id", userId)
+      .eq("auth_user_id", userId)
       .single();
 
-    const base = profile?.vip_until && new Date(profile.vip_until) > new Date()
-      ? new Date(profile.vip_until)
+    const base = userRow?.vip_until && new Date(userRow.vip_until) > new Date()
+      ? new Date(userRow.vip_until)
       : new Date();
     const newVipUntil = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    await supabase.from("profiles").update({ vip_until: newVipUntil }).eq("id", userId);
+    await supabase.from("users").update({ vip_until: newVipUntil }).eq("auth_user_id", userId);
 
     return new Response(JSON.stringify({ ok: true, vip_until: newVipUntil }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
