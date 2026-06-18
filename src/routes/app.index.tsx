@@ -15,6 +15,7 @@ export const Route = createFileRoute("/app/")({ component: Dashboard });
 function Dashboard() {
   const { data: profile } = useUser();
   const refreshUser = useRefreshUser();
+  const { canShowAd } = useAd();
   const [mining, setMining] = useState(false);
   const [now, setNow] = useState(Date.now());
 
@@ -24,8 +25,20 @@ function Dashboard() {
   const remaining = Math.max(0, nextAt - now);
   const canMine = !profile?.last_mined_at || remaining === 0;
 
+  async function showInterstitialAd() {
+    if (!canShowAd) return;
+    const Pi = (window as unknown as { Pi?: { Ads?: { showAd: (t: string) => Promise<{ result: string }> } } }).Pi;
+    if (!Pi?.Ads?.showAd) return;
+    try {
+      await Pi.Ads.showAd("interstitial");
+    } catch {
+      // ignore ad errors; mining proceeds
+    }
+  }
+
   async function mine() {
     setMining(true);
+    await showInterstitialAd();
     const { data, error } = await supabase.rpc("mine_dgc");
     setMining(false);
     if (error) {
