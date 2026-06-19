@@ -36,6 +36,27 @@ function GalleryPage() {
     });
   }, []);
 
+  const resolveImages = useCallback(async (curios: Curio[]) => {
+    const paths = curios
+      .map(c => c.image_url)
+      .filter((u): u is string => !!u)
+      .map(u => {
+        const m = u.match(/\/curio-images\/(.+)$/);
+        return m ? m[1] : null;
+      })
+      .filter((p): p is string => !!p);
+    if (!paths.length) return curios;
+    const { data } = await supabase.storage.from("curio-images").createSignedUrls(paths, 3600);
+    const map: Record<string, string> = {};
+    (data ?? []).forEach((d) => { if (d.path && d.signedUrl) map[d.path] = d.signedUrl; });
+    return curios.map(c => {
+      if (!c.image_url) return c;
+      const m = c.image_url.match(/\/curio-images\/(.+)$/);
+      const p = m?.[1];
+      return p && map[p] ? { ...c, image_url: map[p] } : c;
+    });
+  }, []);
+
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     setMe(u.user?.id ?? null);
@@ -44,11 +65,11 @@ function GalleryPage() {
       setBalance(Number(prof?.dgc_balance ?? 0));
     }
     const { data } = await supabase.from("curiosities").select("*").order("created_at", { ascending: false });
-    const curios = (data ?? []) as Curio[];
+    const curios = await resolveImages((data ?? []) as Curio[]);
     setItems(curios);
     await fetchOwners([...new Set(curios.map(c => c.owner_id))]);
     setLoading(false);
-  }, [fetchOwners]);
+  }, [fetchOwners, resolveImages]);
 
   useEffect(() => { load(); }, [load]);
 
