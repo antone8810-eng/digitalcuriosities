@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
     const newVipUntil = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     await supabase.from("users").update({ vip_until: newVipUntil }).eq("auth_user_id", userId);
+    await supabase.from("profiles").update({ vip_until: newVipUntil }).eq("id", userId);
 
     return new Response(JSON.stringify({ ok: true, vip_until: newVipUntil }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

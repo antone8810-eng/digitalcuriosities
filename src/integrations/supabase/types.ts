@@ -181,7 +181,7 @@ export type Database = {
     }
     Functions: {
       mine_dgc: {
-        Args: never
+        Args: { _auth_user_id: string }
         Returns: {
           last_mined_at: string
           new_balance: number
@@ -189,7 +189,7 @@ export type Database = {
         }[]
       }
       purchase_curio: {
-        Args: { _curio_id: string }
+        Args: { _auth_user_id: string; _curio_id: string }
         Returns: {
           new_balance: number
           price: number
