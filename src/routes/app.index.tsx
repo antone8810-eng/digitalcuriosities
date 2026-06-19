@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Gem, Pickaxe, Sparkles, Clock, Megaphone, Loader2 } from "lucide-react";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { useAd } from "@/hooks/use-ad";
 import { useUser, useRefreshUser } from "@/hooks/use-user";
+import { mineDgc } from "@/lib/user-actions.functions";
 import dgcCoin from "@/assets/dgc-coin.jpg.asset.json";
 
 export const Route = createFileRoute("/app/")({ component: Dashboard });
@@ -16,6 +18,7 @@ function Dashboard() {
   const { data: profile } = useUser();
   const refreshUser = useRefreshUser();
   const { canShowAd } = useAd();
+  const runMineDgc = useServerFn(mineDgc);
   const [mining, setMining] = useState(false);
   const [now, setNow] = useState(Date.now());
 
@@ -39,18 +42,20 @@ function Dashboard() {
   async function mine() {
     setMining(true);
     await showInterstitialAd();
-    const { data, error } = await supabase.rpc("mine_dgc");
-    setMining(false);
-    if (error) {
-      const m = error.message.match(/COOLDOWN:(\d+)/);
+    try {
+      const row = await runMineDgc();
+      toast.success(`⛏ Mined ${Number(row.reward).toFixed(0)} DGC!`);
+      setNow(Date.now());
+      await refreshUser();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Mining failed";
+      const m = message.match(/COOLDOWN:(\d+)/);
       if (m) toast.error(`Come back in ${formatDuration(Number(m[1]) * 1000)}`);
-      else toast.error(error.message);
+      else toast.error(message);
+    } finally {
+      setMining(false);
       return;
     }
-    const row = Array.isArray(data) ? data[0] : data;
-    toast.success(`⛏ Mined ${Number(row.reward).toFixed(0)} DGC!`);
-    setNow(Date.now());
-    await refreshUser();
   }
 
   async function signOut() {

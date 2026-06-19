@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Gem, Loader2 } from "lucide-react";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { purchaseCurio } from "@/lib/user-actions.functions";
 
 export const Route = createFileRoute("/app/gallery")({ component: GalleryPage });
 
@@ -25,6 +27,7 @@ function GalleryPage() {
   const [selected, setSelected] = useState<Curio | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
+  const runPurchaseCurio = useServerFn(purchaseCurio);
 
   const fetchOwners = useCallback(async (ids: string[]) => {
     if (!ids.length) return;
@@ -85,14 +88,17 @@ function GalleryPage() {
   async function buy() {
     if (!selected || !me) return;
     setBuying(true);
-    const { data, error } = await supabase.rpc("purchase_curio", { _curio_id: selected.id });
-    setBuying(false);
-    if (error) return toast.error(error.message);
-    const row = Array.isArray(data) ? data[0] : data;
-    setBalance(Number(row?.new_balance ?? balance ?? 0));
-    toast.success(`Purchased "${selected.name}" for ${selected.price} DGC`);
-    setSelected(null);
-    load();
+    try {
+      const row = await runPurchaseCurio({ data: { curioId: selected.id } });
+      setBalance(Number(row?.new_balance ?? balance ?? 0));
+      toast.success(`Purchased "${selected.name}" for ${selected.price} DGC`);
+      setSelected(null);
+      load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Purchase failed");
+    } finally {
+      setBuying(false);
+    }
   }
 
   return (
