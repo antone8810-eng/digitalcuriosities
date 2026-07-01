@@ -26,7 +26,22 @@ declare global {
 }
 
 export function isPiBrowser(): boolean {
-  return typeof window !== "undefined" && !!window.Pi;
+  if (typeof window === "undefined") return false;
+  if (window.Pi) return true;
+  const ua = navigator.userAgent || "";
+  return /PiBrowser/i.test(ua);
+}
+
+export async function waitForPiSdk(timeoutMs = 6000): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (window.Pi) return true;
+  const start = Date.now();
+  return new Promise((resolve) => {
+    const iv = setInterval(() => {
+      if (window.Pi) { clearInterval(iv); resolve(true); }
+      else if (Date.now() - start > timeoutMs) { clearInterval(iv); resolve(!!window.Pi); }
+    }, 150);
+  });
 }
 
 export async function piAuthenticate(): Promise<PiAuthResult> {
