@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
-import { piAuthenticate, isPiBrowser } from "@/lib/pi";
+import { piAuthenticate, isPiBrowser, waitForPiSdk } from "@/lib/pi";
 import { verifyPiAuth } from "@/lib/pi-auth.functions";
 import { useRefreshUser } from "@/hooks/use-user";
 
@@ -18,15 +18,23 @@ function AuthPage() {
   const verify = useServerFn(verifyPiAuth);
   const refreshUser = useRefreshUser();
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [inPiBrowser, setInPiBrowser] = useState(true);
 
-  useEffect(() => { setInPiBrowser(isPiBrowser()); }, []);
+  useEffect(() => {
+    (async () => {
+      await waitForPiSdk(6000);
+      setInPiBrowser(isPiBrowser());
+      setChecking(false);
+    })();
+  }, []);
 
   async function handlePi() {
     if (!isPiBrowser()) {
       toast.error("Open this app inside the Pi Browser to sign in.");
       return;
     }
+    await waitForPiSdk(4000);
     setLoading(true);
     try {
       const pi = await piAuthenticate();
