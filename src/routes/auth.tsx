@@ -76,7 +76,11 @@ function AuthPage() {
           <h1 className="text-2xl font-bold">Digital <span className="gradient-text">Curiosities</span></h1>
           <p className="mt-1 text-sm text-muted-foreground">A Pi Network collectibles ecosystem</p>
 
-          {!inPiBrowser ? (
+          {checking ? (
+            <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Detecting Pi Browser…
+            </div>
+          ) : !inPiBrowser ? (
             <div className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-left">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="mt-0.5 size-5 text-amber-400" />
