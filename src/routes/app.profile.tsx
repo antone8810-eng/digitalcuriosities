@@ -31,7 +31,20 @@ function ProfilePage() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const { data: c } = await supabase.from("curiosities").select("id,name,description,image_url,price,currency").eq("owner_id", u.user.id).order("created_at", { ascending: false });
-    setMine((c ?? []) as Curio[]);
+    const rows = (c ?? []) as Curio[];
+    // Resolve signed URLs for private curio-images bucket
+    const paths: string[] = [];
+    const idxMap: number[] = [];
+    rows.forEach((r, i) => {
+      if (!r.image_url) return;
+      const m = r.image_url.match(/\/curio-images\/(.+)$/);
+      if (m) { paths.push(m[1]); idxMap.push(i); }
+    });
+    if (paths.length) {
+      const { data: signed } = await supabase.storage.from("curio-images").createSignedUrls(paths, 3600);
+      signed?.forEach((s, k) => { if (s.signedUrl) rows[idxMap[k]].image_url = s.signedUrl; });
+    }
+    setMine(rows);
   }, []);
 
   useEffect(() => { load(); }, [load]);
