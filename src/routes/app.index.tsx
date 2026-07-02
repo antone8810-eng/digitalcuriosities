@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Gem, Pickaxe, Sparkles, Clock, Megaphone, Loader2 } from "lucide-react";
@@ -9,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { useAd } from "@/hooks/use-ad";
 import { useUser, useRefreshUser } from "@/hooks/use-user";
-import { mineDgc } from "@/lib/user-actions.functions";
 import dgcCoin from "@/assets/dgc-coin.jpg.asset.json";
 
 export const Route = createFileRoute("/app/")({ component: Dashboard });
