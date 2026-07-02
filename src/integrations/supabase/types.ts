@@ -180,6 +180,7 @@ export type Database = {
       }
     }
     Functions: {
+      claim_mining_reward: { Args: { p_user_id: string }; Returns: Json }
       mine_dgc: {
         Args: { _auth_user_id: string }
         Returns: {
