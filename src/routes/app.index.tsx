@@ -16,15 +16,16 @@ function Dashboard() {
   const { data: profile } = useUser();
   const refreshUser = useRefreshUser();
   const { canShowAd } = useAd();
-  const runMineDgc = useServerFn(mineDgc);
   const [mining, setMining] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [nextAtOverride, setNextAtOverride] = useState<number | null>(null);
 
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
-  const nextAt = profile?.last_mined_at ? new Date(profile.last_mined_at).getTime() + 24 * 3600_000 : 0;
+  const nextAtFromProfile = profile?.last_mined_at ? new Date(profile.last_mined_at).getTime() + 24 * 3600_000 : 0;
+  const nextAt = nextAtOverride ?? nextAtFromProfile;
   const remaining = Math.max(0, nextAt - now);
-  const canMine = !profile?.last_mined_at || remaining === 0;
+  const canMine = !nextAt || remaining === 0;
 
   async function showInterstitialAd() {
     if (!canShowAd) return;
@@ -41,18 +42,37 @@ function Dashboard() {
     setMining(true);
     await showInterstitialAd();
     try {
-      const row = await runMineDgc();
-      toast.success(`⛏ Mined ${Number(row.reward).toFixed(0)} DGC!`);
-      setNow(Date.now());
-      await refreshUser();
+      const { data: userRes, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !userRes.user) throw new Error("Please login first");
+
+      const { data, error } = await supabase.rpc("claim_mining_reward", {
+        p_user_id: userRes.user.id,
+      });
+      if (error) throw new Error(error.message);
+
+      const result = data as {
+        success: boolean;
+        reward?: number;
+        message?: string;
+        next_at?: string;
+      };
+
+      if (result.success) {
+        toast.success(`تم الحصول على ${Number(result.reward ?? 0)} DGC`);
+        if (result.next_at) setNextAtOverride(new Date(result.next_at).getTime());
+        await refreshUser();
+      } else {
+        if (result.next_at) setNextAtOverride(new Date(result.next_at).getTime());
+        const remainingMs = result.next_at
+          ? Math.max(0, new Date(result.next_at).getTime() - Date.now())
+          : 0;
+        toast.error(`On cooldown — ${formatDuration(remainingMs)}`);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Mining failed";
-      const m = message.match(/COOLDOWN:(\d+)/);
-      if (m) toast.error(`Come back in ${formatDuration(Number(m[1]) * 1000)}`);
-      else toast.error(message);
+      toast.error(message);
     } finally {
       setMining(false);
-      return;
     }
   }
 
